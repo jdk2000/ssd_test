@@ -20,15 +20,15 @@ std::vector<float> generateRandomEmbedding(size_t embSize) {
 std::vector<uint64_t> getRandomKeys(const std::unordered_set<uint64_t> &keySet, size_t numKeys) {
     std::vector<uint64_t> keys;
     keys.reserve(numKeys);
-    std::vector<uint64_t> temp(keySet.begin(), keySet.end()); // 将集合转换为向量以便索引
+    std::vector<uint64_t> temp(keySet.begin(), keySet.end());
     if (temp.size() < numKeys) {
         std::cerr << "Error: Not enough keys in the set to extract " << numKeys << " keys." << std::endl;
-        return keys; // 返回空向量或抛出异常，取决于你的需求
+        return keys;
     }
     std::random_device rd;
     std::mt19937 g(rd());
-    std::uniform_int_distribution<size_t> distr(0, temp.size() - 1);
     while (keys.size() < numKeys) {
+        std::uniform_int_distribution<size_t> distr(0, temp.size() - 1);
         size_t idx = distr(g);
         keys.push_back(temp[idx]);
         // 防止重复提取相同的键
@@ -55,7 +55,10 @@ void BenchMark(SSDEngine *ssdEngine) {
     std::mt19937 gen(rd());
     std::uniform_int_distribution<uint64_t> dis(0, 1e8);
 
-    for (int i = 0; i < 10; ++i) {
+    std::vector<double> insertionDurations;
+    std::vector<double> fetchDurations;
+
+    for (int i = 0; i < 50; ++i) {
         std::vector<uint64_t> insertKeys(5000);
         for (uint64_t i = 0; i < 5000; ++i) {
             insertKeys[i] = dis(gen);
@@ -66,6 +69,7 @@ void BenchMark(SSDEngine *ssdEngine) {
         ssdEngine->InsertEmbeddings(insertKeys, insertEmbeddings);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        insertionDurations.push_back(duration);
 
         std::cout << "Insertion time: " << duration << " ms" << std::endl;
         std::vector<uint64_t> fetchKeys = getRandomKeys(validKeys, 5000);
@@ -75,8 +79,17 @@ void BenchMark(SSDEngine *ssdEngine) {
         auto fetchedEmbeddings = ssdEngine->FetchEmbeddings(fetchKeys);
         end = std::chrono::high_resolution_clock::now();
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        fetchDurations.push_back(duration);
         std::cout << "Fetch time: " << duration << " ms" << std::endl;
     }
+
+    // 计算插入和获取的平均时间
+    double avgInsertionTime = std::accumulate(insertionDurations.begin(), insertionDurations.end(), 0.0) / insertionDurations.size();
+    double avgFetchTime = std::accumulate(fetchDurations.begin(), fetchDurations.end(), 0.0) / fetchDurations.size();
+    // 输出平均时间
+    std::cout << "Average insertion time: " << avgInsertionTime << " ms" << std::endl;
+    std::cout << "Average fetch time: " << avgFetchTime << " ms" << std::endl;
+
 }
 
 int main() {

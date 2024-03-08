@@ -38,7 +38,6 @@ private:
         size_t offset;
     };
     struct FileInfo {
-        size_t curOffset;
         std::unordered_set<uint64_t> validKeys;
     };
     uint64_t embSize{};

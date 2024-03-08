@@ -5,6 +5,7 @@
 #include "write_buffer_ssd_engine_impl.h"
 #include <filesystem>
 #include <iostream>
+#include <numeric>
 
 namespace fs = std::filesystem;
 
@@ -39,6 +40,7 @@ void WriteBufferSSDEngineImpl::InsertEmbeddings(std::vector<uint64_t> keys, std:
 
         memcpy(write_buffer + buffer_off, addrs[i], memSize);
         key2Pos[keys[i]] = {false, 0, buffer_off};
+        keysInBuffer.push_back(keys[i]);
 
         buffer_off += memSize;
     }
@@ -78,7 +80,7 @@ void WriteBufferSSDEngineImpl::DeleteEmbeddings(std::vector<uint64_t> keys) {
 }
 
 void WriteBufferSSDEngineImpl::CreateNewFile() {
-    fileInfoMap[++fileCnt] = {0, {}};
+    fileInfoMap[++fileCnt] = {{}};
     if (curFile.is_open()) {
         curFile.close();
     }
@@ -100,5 +102,6 @@ void WriteBufferSSDEngineImpl::FlushWriteBuffer() {
         pos.fileID = fileCnt;
         curFileInfo.validKeys.insert(key);
     }
+    keysInBuffer.clear();
     buffer_off = 0;
 }
